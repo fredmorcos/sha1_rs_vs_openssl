@@ -1,0 +1,16 @@
+[package]
+name = "sha1_rs_vs_openssl"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+openssl = "0.10"
+rand = "0.8"
+sha-1 = "0.9"
+
+[dev-dependencies]
+criterion = "0.3"
+
+[[bench]]
+name = "sha1"
+harness = false
