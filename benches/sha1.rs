@@ -4,32 +4,35 @@ use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criteri
 use rand::distributions::{DistIter, Uniform};
 use rand::prelude::ThreadRng;
 use rand::{thread_rng, Rng};
+use sha_1::digest::consts::U20;
+use sha_1::digest::generic_array::GenericArray;
+use sha_1::digest::FixedOutput;
 
-fn rust_sha_1(prefix: &[u8], suffix: &[u8]) {
+fn rust_sha_1(prefix: &[u8], suffix: &[u8], result: &mut GenericArray<u8, U20>) {
     use sha_1::{Digest, Sha1};
 
     let mut hasher = Sha1::new();
     hasher.update(prefix);
     hasher.update(suffix);
-    let _result = hasher.finalize();
+    hasher.finalize_into(result)
 }
 
-fn openssl_sha1(prefix: &[u8], suffix: &[u8]) {
+fn openssl_sha1(prefix: &[u8], suffix: &[u8]) -> [u8; 20] {
     use openssl::sha::Sha1;
 
     let mut hasher = Sha1::new();
     hasher.update(prefix);
     hasher.update(suffix);
-    let _result = hasher.finish();
+    hasher.finish()
 }
 
-fn rust_sha1(prefix: &[u8], suffix: &[u8]) {
+fn rust_sha1(prefix: &[u8], suffix: &[u8]) -> [u8; 20] {
     use sha1::Sha1;
 
     let mut hasher = Sha1::new();
     hasher.update(prefix);
     hasher.update(suffix);
-    let _result = hasher.digest().bytes();
+    hasher.digest().bytes()
 }
 
 type BytesRng = DistIter<Uniform<u8>, ThreadRng, u8>;
@@ -44,30 +47,58 @@ fn random_string<const LEN: usize>(s: &mut Vec<u8>, rng: &mut BytesRng) {
 }
 
 fn criterion_benchmark(c: &mut Criterion) {
-    const LEN: usize = 8;
-
     let prefix = "kHtMDdVrTKHhUaNusVyBaJybfNMWjfxnaIiAYqgfmCTkNKFvYGloeHDHdsksfFla".as_bytes();
     let mut rng = thread_rng().sample_iter(Uniform::from(1..255));
 
     let mut group = c.benchmark_group("SHA1");
-    group.warm_up_time(Duration::from_secs(10));
+    group.warm_up_time(Duration::from_secs(5));
 
-    for i in 0..2 {
-        let mut suffix = Vec::with_capacity(LEN);
-        random_string::<LEN>(&mut suffix, &mut rng);
+    let mut suffix = Vec::with_capacity(8);
+    random_string::<8>(&mut suffix, &mut rng);
 
-        group.bench_with_input(BenchmarkId::new("sha-1 crate", i), &(), |b, _| {
-            b.iter(|| rust_sha_1(black_box(prefix), black_box(&suffix)))
-        });
+    let mut hash = Default::default();
 
-        group.bench_with_input(BenchmarkId::new("sha1 crate", i), &(), |b, _| {
-            b.iter(|| rust_sha1(black_box(prefix), black_box(&suffix)))
-        });
+    group.bench_with_input(BenchmarkId::new("sha-1 crate", "short"), &(), |b, _| {
+        b.iter(|| rust_sha_1(black_box(prefix), black_box(&suffix), black_box(&mut hash)))
+    });
 
-        group.bench_with_input(BenchmarkId::new("openssl sha1", i), &(), |b, _| {
-            b.iter(|| openssl_sha1(black_box(prefix), black_box(&suffix)))
-        });
-    }
+    group.bench_with_input(BenchmarkId::new("sha1 crate", "short"), &(), |b, _| {
+        b.iter(|| black_box(rust_sha1(black_box(prefix), black_box(&suffix))))
+    });
+
+    group.bench_with_input(BenchmarkId::new("openssl sha1", "short"), &(), |b, _| {
+        b.iter(|| black_box(openssl_sha1(black_box(prefix), black_box(&suffix))))
+    });
+
+    let mut suffix = Vec::with_capacity(64);
+    random_string::<64>(&mut suffix, &mut rng);
+
+    group.bench_with_input(BenchmarkId::new("sha-1 crate", "long"), &(), |b, _| {
+        b.iter(|| rust_sha_1(black_box(prefix), black_box(&suffix), black_box(&mut hash)))
+    });
+
+    group.bench_with_input(BenchmarkId::new("sha1 crate", "long"), &(), |b, _| {
+        b.iter(|| black_box(rust_sha1(black_box(prefix), black_box(&suffix))))
+    });
+
+    group.bench_with_input(BenchmarkId::new("openssl sha1", "long"), &(), |b, _| {
+        b.iter(|| black_box(openssl_sha1(black_box(prefix), black_box(&suffix))))
+    });
+
+    let mut suffix = Vec::with_capacity(512);
+    random_string::<512>(&mut suffix, &mut rng);
+
+    group.bench_with_input(BenchmarkId::new("sha-1 crate", "huge"), &(), |b, _| {
+        b.iter(|| rust_sha_1(black_box(prefix), black_box(&suffix), black_box(&mut hash)))
+    });
+
+    group.bench_with_input(BenchmarkId::new("sha1 crate", "huge"), &(), |b, _| {
+        b.iter(|| black_box(rust_sha1(black_box(prefix), black_box(&suffix))))
+    });
+
+    group.bench_with_input(BenchmarkId::new("openssl sha1", "huge"), &(), |b, _| {
+        b.iter(|| black_box(openssl_sha1(black_box(prefix), black_box(&suffix))))
+    });
 }
 
 criterion_group!(benches, criterion_benchmark);
