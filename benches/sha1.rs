@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use rand::distributions::{DistIter, Uniform};
 use rand::prelude::ThreadRng;
@@ -48,6 +50,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     let mut rng = thread_rng().sample_iter(Uniform::from(1..255));
 
     let mut group = c.benchmark_group("SHA1");
+    group.warm_up_time(Duration::from_secs(10));
 
     for i in 0..2 {
         let mut suffix = Vec::with_capacity(LEN);
