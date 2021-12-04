@@ -6,9 +6,9 @@ use rand::prelude::ThreadRng;
 use rand::{thread_rng, Rng};
 use sha_1::digest::consts::U20;
 use sha_1::digest::generic_array::GenericArray;
-use sha_1::digest::FixedOutput;
 
 fn rust_sha_1(prefix: &[u8], suffix: &[u8], result: &mut GenericArray<u8, U20>) {
+    use sha_1::digest::FixedOutput;
     use sha_1::{Digest, Sha1};
 
     let mut hasher = Sha1::new();
