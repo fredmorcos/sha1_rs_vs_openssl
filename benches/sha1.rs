@@ -58,6 +58,10 @@ fn criterion_benchmark(c: &mut Criterion) {
 
     let mut hash = Default::default();
 
+    rust_sha_1(prefix, &suffix, &mut hash);
+    assert_eq!(rust_sha1(prefix, &suffix), hash.as_slice());
+    assert_eq!(openssl_sha1(prefix, &suffix), hash.as_slice());
+
     group.bench_with_input(BenchmarkId::new("sha-1 crate", "short"), &(), |b, _| {
         b.iter(|| rust_sha_1(black_box(prefix), black_box(&suffix), black_box(&mut hash)))
     });
@@ -73,6 +77,10 @@ fn criterion_benchmark(c: &mut Criterion) {
     let mut suffix = Vec::with_capacity(64);
     random_string::<64>(&mut suffix, &mut rng);
 
+    rust_sha_1(prefix, &suffix, &mut hash);
+    assert_eq!(rust_sha1(prefix, &suffix), hash.as_slice());
+    assert_eq!(openssl_sha1(prefix, &suffix), hash.as_slice());
+
     group.bench_with_input(BenchmarkId::new("sha-1 crate", "long"), &(), |b, _| {
         b.iter(|| rust_sha_1(black_box(prefix), black_box(&suffix), black_box(&mut hash)))
     });
@@ -87,6 +95,10 @@ fn criterion_benchmark(c: &mut Criterion) {
 
     let mut suffix = Vec::with_capacity(512);
     random_string::<512>(&mut suffix, &mut rng);
+
+    rust_sha_1(prefix, &suffix, &mut hash);
+    assert_eq!(rust_sha1(prefix, &suffix), hash.as_slice());
+    assert_eq!(openssl_sha1(prefix, &suffix), hash.as_slice());
 
     group.bench_with_input(BenchmarkId::new("sha-1 crate", "huge"), &(), |b, _| {
         b.iter(|| rust_sha_1(black_box(prefix), black_box(&suffix), black_box(&mut hash)))
