@@ -3,8 +3,8 @@ use rand::distributions::{DistIter, Uniform};
 use rand::prelude::ThreadRng;
 use rand::{thread_rng, Rng};
 
-fn rust_sha1(prefix: &[u8], suffix: &[u8]) {
-    use sha1::{Digest, Sha1};
+fn rust_sha_1(prefix: &[u8], suffix: &[u8]) {
+    use sha_1::{Digest, Sha1};
 
     let mut hasher = Sha1::new();
     hasher.update(prefix);
@@ -19,6 +19,15 @@ fn openssl_sha1(prefix: &[u8], suffix: &[u8]) {
     hasher.update(prefix);
     hasher.update(suffix);
     let _result = hasher.finish();
+}
+
+fn rust_sha1(prefix: &[u8], suffix: &[u8]) {
+    use sha1::Sha1;
+
+    let mut hasher = Sha1::new();
+    hasher.update(prefix);
+    hasher.update(suffix);
+    let _result = hasher.digest().bytes();
 }
 
 type BytesRng = DistIter<Uniform<u8>, ThreadRng, u8>;
@@ -44,11 +53,15 @@ fn criterion_benchmark(c: &mut Criterion) {
         let mut suffix = Vec::with_capacity(LEN);
         random_string::<LEN>(&mut suffix, &mut rng);
 
-        group.bench_with_input(BenchmarkId::new("Rust SHA1", i), &(), |b, _| {
+        group.bench_with_input(BenchmarkId::new("sha-1 crate", i), &(), |b, _| {
+            b.iter(|| rust_sha_1(black_box(prefix), black_box(&suffix)))
+        });
+
+        group.bench_with_input(BenchmarkId::new("sha1 crate", i), &(), |b, _| {
             b.iter(|| rust_sha1(black_box(prefix), black_box(&suffix)))
         });
 
-        group.bench_with_input(BenchmarkId::new("OpenSSL SHA1", i), &(), |b, _| {
+        group.bench_with_input(BenchmarkId::new("openssl sha1", i), &(), |b, _| {
             b.iter(|| openssl_sha1(black_box(prefix), black_box(&suffix)))
         });
     }
