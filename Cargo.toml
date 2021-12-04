@@ -15,3 +15,12 @@ criterion = "0.3"
 [[bench]]
 name = "sha1"
 harness = false
+
+[profile.release]
+lto = true
+codegen-units = 1
+opt-level = 3
+incremental = false
+debug = false
+overflow-checks = false
+panic = "abort"
